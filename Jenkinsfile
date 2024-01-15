@@ -1,47 +1,36 @@
 #!/usr/bin/env groovy
-
 pipeline {
-   agent any
-   environment {
-        DIGITAL_OCEAN_IP = credentials('jenkins_id')
-    }
+    agent any
+
     stages {
-        stage('Update version') {
+        stage('Build') {
             steps {
                 script {
-                    dir("app") {
-                        sh "npm version minor"
-                        def packageJson = readJSON file: 'package.json'
-                        def getVersion = packageJson.version
-                        env.IMAGE_NAME = "$getVersion-$BUILD_NUMBER"
-                    }
+                    echo "building an image..."
                 }
             }
         }
-        stage('Docker build and push') {
+
+        stage('Deploy') {
+            environment {
+                AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
+                AWS_SECRET_ACCESS_KEY = credentials('jenkins_aws_secret_access_key')
+            }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh "docker build -t rodybothe2/node-app-new:${IMAGE_NAME} ."
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
-                    sh "docker push rodybothe2/node-app-new:${IMAGE_NAME}"
+                script {
+                    echo 'Deploying the application...'
+                    sh "kubectl create deployment nginx-deployment --image=nginx"
                 }
             }
         }
-        stage('Deploy to EC2') {
-            steps {
-                script {
-                    def dockerCmd = "bash ./server-cmds.sh ${IMAGE_NAME}"
-                    def ec2Instance = "ec2-user@3.121.174.25"
-                    def shellCmd = "bash ./update_inbound_rule.sh ${DIGITAL_OCEAN_IP}"
-                    sshagent(['ec2-user']) {
-                        sh "scp -o StrictHostKeyChecking=no server-cmds.sh docker-compose.yml ${ec2Instance}:~/"
-                        sh "scp -o StrictHostKeyChecking=no update_inbound_rule.sh ${ec2Instance}:~/"
-                        sh "scp -o StrictHostKeyChecking=no docker-compose.yml ${ec2Instance}:~/"
-                        sh "ssh -tt -o StrictHostKeyChecking=no ec2-user@3.121.174.25 ${dockerCmd}"
-                        sh "ssh -tt -o StrictHostKeyChecking=no ec2-user@3.121.174.25 ${shellCmd}"
-                    }
-                }
-            }
+    }
+
+    post {
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
