@@ -19,18 +19,9 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying the application...'
-                    sh "kubectl create deployment nginx-deployment --image=nginx"
+                    sh "/usr/local/bin/aws-iam-authenticator kubectl create deployment nginx-deployment --image=nginx""
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed!'
         }
     }
 }
