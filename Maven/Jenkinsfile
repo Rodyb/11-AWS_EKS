@@ -12,6 +12,7 @@ pipeline {
                  dir("Maven") {
                     'sh mvn build-helper:parse-version version:set \
                      -DnewVersion=\\\${parsedVersion.majorVersion}.\\\${parsedVersion.minorVersion}.\\\${parsedVersion.nextIncrementalVersion} versions:commit'
+
                     def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
                     def version = matcher[0][1]
                     env.IMAGE_NAME = "$version-$BUILD_NUMBER"
@@ -25,8 +26,8 @@ pipeline {
             steps {
                 script {
                      dir("Maven") {
-                    echo 'Building the app'
-                    sh 'mvn clean package'
+                        echo 'Building the app'
+                        sh 'mvn clean package'
                     }
                 }
             }
@@ -34,31 +35,32 @@ pipeline {
         stage('Docker build and push') {
             steps {
               script {
-                dir("Maven") {
-                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'USER', passwordVariable: 'PASS')]){
-                     sh "docker build -t rodybothe2/mvn:${IMAGE_NAME} ."
-                     sh 'echo $PASS | docker login -u $USER --password-stdin'
-                     sh "docker push rodybothe2/mvn:${IMAGE_NAME}"
+                 dir("Maven") {
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'USER', passwordVariable: 'PASS')]){
+                         sh "docker build -t rodybothe2/mvn:${IMAGE_NAME} ."
+                         sh 'echo $PASS | docker login -u $USER --password-stdin'
+                         sh "docker push rodybothe2/mvn:${IMAGE_NAME}"
                        }
                     }
                 }
             }
         }
-//         stage('Deploy') {
-//             environment {
-//                 AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
-//                 AWS_SECRET_ACCESS_KEY = credentials('jenkins_aws_secret_access_key')
-//                 PATH = "/usr/local/bin:${env.PATH}"
-//                 APP_NAME = 'java-maven-app'
-//             }
-//             steps {
-//                 script {
-//                     echo 'Deploying the application...'
-//                     sh "envsubst < k8s/maven-deployment.yml | kubectl apply -f -"
-//                     sh "envsubst < k8s/maven-service.yml | kubectl apply -f -"
-//                     sh "kubectl create deployment nginx-deployment --image=nginx"
-//                 }
-//             }
-//         }
+        stage('Deploy') {
+            environment {
+                AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
+                AWS_SECRET_ACCESS_KEY = credentials('jenkins_aws_secret_access_key')
+                PATH = "/usr/local/bin:${env.PATH}"
+                APP_NAME = 'java-maven-app'
+            }
+            steps {
+                script {
+                     dir("Maven") {
+                        echo 'Deploying the application...'
+                        sh "envsubst < k8s/maven-deployment.yml | kubectl apply -f -"
+                        sh "envsubst < k8s/maven-service.yml | kubectl apply -f -"
+                    }
+                }
+            }
+        }
     }
 }
