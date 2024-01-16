@@ -51,13 +51,15 @@ pipeline {
                 AWS_SECRET_ACCESS_KEY = credentials('jenkins_aws_secret_access_key')
                 PATH = "/usr/local/bin:${env.PATH}"
                 APP_NAME = 'java-maven-app'
+                NAMESPACE = 'aws-test'
+
             }
             steps {
                 script {
                      dir("Maven") {
                         echo 'Deploying the application...'
-                        sh "envsubst < k8s/maven-deployment.yml | kubectl apply -f -"
-                        sh "envsubst < k8s/maven-service.yml | kubectl apply -f -"
+                        sh "envsubst < k8s/maven-deployment.yml | kubectl apply --namespace=${NAMESPACE}  -f -"
+                        sh "envsubst < k8s/maven-service.yml | kubectl apply --namespace=${NAMESPACE} -f -"
                     }
                 }
             }
