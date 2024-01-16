@@ -1,5 +1,6 @@
 #!/bin/bash
 
+## Create Kubernetes cluster
 eksctl create cluster \
 --name demo-cluster2 \
 --version 1.27 \
@@ -8,6 +9,11 @@ eksctl create cluster \
 --node-type t2.micro \
 --nodes 2 \
 --nodes-min 1 \
---nodes-max 3 \
---managed
+--nodes-max 3
+
+## Create Fargate profile and attach to cluster
+eksctl create fargateprofile \
+    --cluster demo-cluster2 \
+    --name fargate-profile \
+    --namespace java-application
 
