@@ -24,8 +24,10 @@ pipeline {
         stage('Build the app') {
             steps {
                 script {
+                     dir("Maven") {
                     echo 'Building the app'
                     sh 'mvn clean package'
+                    }
                 }
             }
         }
