@@ -25,3 +25,9 @@ my docker is public so no authentication needed
 
 Scale the amount of replicas of the java app
 - `kubectl scale deployment java-app-deployment --replicas=3 -n java-application`
+
+# Exercise 4: 
+- Make sure `docker_registry` has been executed on the instance in the Jenkins container once.
+- See Jenkinsfile in Maven directory
+
+# Exercise 5: 
